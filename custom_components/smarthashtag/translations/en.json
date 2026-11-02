@@ -81,6 +81,9 @@
       },
       "steering_wheel_heating_control": {
         "name": "Steering wheel heating"
+      },
+      "trip_recording": {
+        "name": "Trip recording"
       }
     },
     "lock": {
@@ -553,6 +556,48 @@
       },
       "relative_humidity": {
         "name": "Relative humidity"
+      },
+      "last_trip_distance": {
+        "name": "Last trip distance"
+      },
+      "last_trip_duration": {
+        "name": "Last trip duration"
+      },
+      "last_trip_energy": {
+        "name": "Last trip energy"
+      },
+      "last_trip_average_consumption": {
+        "name": "Last trip average consumption"
+      },
+      "last_trip_average_speed": {
+        "name": "Last trip average speed"
+      },
+      "last_trip_regenerated_energy": {
+        "name": "Last trip regenerated energy"
+      },
+      "last_trip_end": {
+        "name": "Last trip end"
+      },
+      "recorded_trips": {
+        "name": "Recorded trips"
+      },
+      "parked_since": {
+        "name": "Parked since"
+      },
+      "remaining_range_to_20_percent": {
+        "name": "Range to 20 %"
+      },
+      "vehicle_alarm_status": {
+        "name": "Alarm system status code"
+      },
+      "vehicle_alarm_trigger": {
+        "name": "Alarm trigger source code"
+      },
+      "next_wakeup": {
+        "name": "Next TBox wakeup"
+      },
+      "power_mode": {
+        "name": "Power mode"
       }
     },
     "number": {
@@ -566,6 +611,11 @@
       },
       "honk_horn": {
         "name": "Honk horn"
+      }
+    },
+    "update": {
+      "vehicle_software": {
+        "name": "Vehicle software"
       }
     }
   },

@@ -6,6 +6,7 @@ from homeassistant.components.binary_sensor import (
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
+from homeassistant.const import EntityCategory
 
 from .const import (
     CONF_VEHICLE,
@@ -140,6 +141,88 @@ LOCK_ENTITIES = (
 )
 
 
+def _state_flag(attr: str) -> Callable[[Any, str], bool | None]:
+    """Read a 0/1 flag of the TBox state; None if the car does not report it."""
+
+    def _is_on(vehicle: Any, key: str) -> bool | None:
+        value = getattr(vehicle.state, attr)
+        try:
+            return int(value) == 1
+        except TypeError, ValueError:
+            return None
+
+    return _is_on
+
+
+STATE_ENTITIES = (
+    SmartHashtagBinarySensorEntityDescription(
+        key="camping_mode",
+        name="Camping mode",
+        icon="mdi:tent",
+        is_on_fn=_state_flag("camping_mode_active"),
+    ),
+    SmartHashtagBinarySensorEntityDescription(
+        key="valet_mode",
+        name="Valet mode",
+        icon="mdi:account-tie-hat",
+        is_on_fn=_state_flag("valet_mode_state"),
+    ),
+    SmartHashtagBinarySensorEntityDescription(
+        key="park_comfort",
+        name="Park comfort",
+        icon="mdi:car-seat",
+        is_on_fn=_state_flag("park_comfort_state"),
+    ),
+    SmartHashtagBinarySensorEntityDescription(
+        key="trip_recording",
+        name="Trip recording",
+        icon="mdi:map-marker-path",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        is_on_fn=_state_flag("journal_log_state"),
+    ),
+    SmartHashtagBinarySensorEntityDescription(
+        key="battery_pulse_heating",
+        name="Battery pulse heating",
+        icon="mdi:heat-wave",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        is_on_fn=_state_flag("pulse_heat_active"),
+    ),
+    SmartHashtagBinarySensorEntityDescription(
+        key="cabin_overheat_protection",
+        name="Cabin overheat protection",
+        icon="mdi:thermometer-alert",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        is_on_fn=_state_flag("overheat_state"),
+    ),
+    SmartHashtagBinarySensorEntityDescription(
+        key="car_locator",
+        name="Car locator",
+        icon="mdi:crosshairs-gps",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        is_on_fn=_state_flag("car_locator_active"),
+    ),
+    SmartHashtagBinarySensorEntityDescription(
+        key="position_upload",
+        name="Position upload",
+        icon="mdi:map-marker-up",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        is_on_fn=_state_flag("position_upload_state"),
+    ),
+    SmartHashtagBinarySensorEntityDescription(
+        key="privacy_mode",
+        name="Privacy mode",
+        icon="mdi:incognito",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        is_on_fn=_state_flag("privacy_mode"),
+    ),
+)
+
+
 class SmartHashtagLockBinarySensor(SmartHashtagEntity, BinarySensorEntity):
     """Safety Binary Sensor class."""
 
@@ -190,5 +273,5 @@ async def async_setup_entry(hass, entry, async_add_devices):
                 entity_description, key=f"{vehicle}_{entity_description.key}"
             ),
         )
-        for entity_description in LOCK_ENTITIES
+        for entity_description in (*LOCK_ENTITIES, *STATE_ENTITIES)
     )

@@ -18,6 +18,8 @@ from .sensor_groups import (
     ENTITY_RUNNING_DESCRIPTIONS,
     ENTITY_SAFETY_DESCRIPTIONS,
     ENTITY_TIRE_DESCRIPTIONS,
+    ENTITY_VEHICLE_DATA_DESCRIPTIONS,
+    SmartVehicleSensorEntityDescription,
 )
 
 
@@ -125,6 +127,11 @@ async def async_setup_entry(hass, entry, async_add_devices):
             ),
         )
         for entity_description in ENTITY_SAFETY_DESCRIPTIONS
+    )
+
+    async_add_devices(
+        SmartHashtagVehicleDataSensor(coordinator, vehicle, entity_description)
+        for entity_description in ENTITY_VEHICLE_DATA_DESCRIPTIONS
     )
 
 
@@ -607,3 +614,35 @@ class SmartHashtagSafetySensor(SmartHashtagEntity, SensorEntity):
                 err,
             )
         return self.entity_description.native_unit_of_measurement
+
+
+class SmartHashtagVehicleDataSensor(SmartHashtagEntity, SensorEntity):
+    """Sensor whose value is computed from the whole vehicle object."""
+
+    entity_description: SmartVehicleSensorEntityDescription
+
+    def __init__(
+        self,
+        coordinator: SmartHashtagDataUpdateCoordinator,
+        vin: str,
+        entity_description: SmartVehicleSensorEntityDescription,
+    ) -> None:
+        """Initialize the sensor class."""
+        super().__init__(coordinator)
+        self._vin = vin
+        self._attr_unique_id = f"{self._attr_unique_id}_{vin}_{entity_description.key}"
+        self.entity_description = entity_description
+
+    @property
+    def native_value(self):
+        """Return the value read from the vehicle."""
+        vehicle = (self.coordinator.account.vehicles or {}).get(self._vin)
+        if vehicle is None:
+            return None
+        try:
+            return self.entity_description.value_fn(vehicle)
+        except (AttributeError, KeyError, TypeError, ValueError) as err:
+            LOGGER.debug(
+                "Value unavailable for %s: %s", self.entity_description.key, err
+            )
+            return None

@@ -81,6 +81,9 @@
       },
       "steering_wheel_heating_control": {
         "name": "Lenkradheizung"
+      },
+      "trip_recording": {
+        "name": "Fahrtaufzeichnung"
       }
     },
     "lock": {
@@ -553,6 +556,48 @@
       },
       "relative_humidity": {
         "name": "Luftfeuchtigkeit"
+      },
+      "last_trip_distance": {
+        "name": "Letzte Fahrt Strecke"
+      },
+      "last_trip_duration": {
+        "name": "Letzte Fahrt Dauer"
+      },
+      "last_trip_energy": {
+        "name": "Letzte Fahrt Energie"
+      },
+      "last_trip_average_consumption": {
+        "name": "Letzte Fahrt Durchschnittsverbrauch"
+      },
+      "last_trip_average_speed": {
+        "name": "Letzte Fahrt Durchschnittsgeschwindigkeit"
+      },
+      "last_trip_regenerated_energy": {
+        "name": "Letzte Fahrt rekuperierte Energie"
+      },
+      "last_trip_end": {
+        "name": "Letzte Fahrt Ende"
+      },
+      "recorded_trips": {
+        "name": "Aufgezeichnete Fahrten"
+      },
+      "parked_since": {
+        "name": "Geparkt seit"
+      },
+      "remaining_range_to_20_percent": {
+        "name": "Reichweite bis 20 %"
+      },
+      "vehicle_alarm_status": {
+        "name": "Alarmanlage Statuscode"
+      },
+      "vehicle_alarm_trigger": {
+        "name": "Alarm Auslöser-Code"
+      },
+      "next_wakeup": {
+        "name": "Nächstes Aufwachen TBox"
+      },
+      "power_mode": {
+        "name": "Energiemodus"
       }
     },
     "number": {
@@ -566,6 +611,11 @@
       },
       "honk_horn": {
         "name": "Hupen"
+      }
+    },
+    "update": {
+      "vehicle_software": {
+        "name": "Fahrzeug-Software"
       }
     }
   },

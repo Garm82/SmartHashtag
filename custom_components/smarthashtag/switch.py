@@ -74,6 +74,10 @@ async def async_setup_entry(
     if getattr(vehicles[vehicle], "charging_lid_control", None) is not None:
         entities.append(SmartChargingLidSwitch(coordinator, vehicle))
 
+    # Requires a pysmarthashtag release that provides Vehicle.journal_recording_control
+    if getattr(vehicles[vehicle], "journal_recording_control", None) is not None:
+        entities.append(SmartTripRecordingSwitch(coordinator, vehicle))
+
     async_add_entities(entities, update_before_add=True)
 
 
@@ -231,6 +235,36 @@ class SmartChargingSwitch(SmartPendingStateSwitch):
         if active:
             return await charging_control.start_charging()
         return await charging_control.stop_charging()
+
+
+class SmartTripRecordingSwitch(SmartPendingStateSwitch):
+    """
+    Switch entity for the on-vehicle trip recording (journal log).
+
+    The cloud only returns trips while recording is on in the car; the last
+    trip sensors stay empty otherwise. The state follows the TBox flag
+    `journal_log_state` reported by the vehicle.
+    """
+
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_icon = "mdi:map-marker-path"
+    _attr_translation_key = "trip_recording"
+    _interval_key = "trip_recording_switch"
+    _command_name = "trip recording"
+
+    @property
+    def _reported_state(self) -> bool:
+        """Return true if the vehicle reports trip recording as on."""
+        state = None if self._vehicle is None else self._vehicle.state
+        if state is None or state.journal_log_state is None:
+            return False
+        return int(state.journal_log_state) == 1
+
+    async def _send_command(self, active: bool) -> bool:
+        control = self._vehicle.journal_recording_control
+        if active:
+            return await control.enable_recording()
+        return await control.disable_recording()
 
 
 class SmartDefrostSwitch(SmartPendingStateSwitch):

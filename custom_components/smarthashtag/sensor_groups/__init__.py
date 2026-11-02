@@ -10,6 +10,10 @@ from .position import ENTITY_POSITION_DESCRIPTIONS
 from .running import ENTITY_RUNNING_DESCRIPTIONS
 from .safety import ENTITY_SAFETY_DESCRIPTIONS
 from .tire import ENTITY_TIRE_DESCRIPTIONS
+from .vehicle_data import (
+    ENTITY_VEHICLE_DATA_DESCRIPTIONS,
+    SmartVehicleSensorEntityDescription,
+)
 
 __all__ = [
     "ENTITY_BATTERY_DESCRIPTIONS",
@@ -20,4 +24,6 @@ __all__ = [
     "ENTITY_RUNNING_DESCRIPTIONS",
     "ENTITY_SAFETY_DESCRIPTIONS",
     "ENTITY_TIRE_DESCRIPTIONS",
+    "ENTITY_VEHICLE_DATA_DESCRIPTIONS",
+    "SmartVehicleSensorEntityDescription",
 ]
