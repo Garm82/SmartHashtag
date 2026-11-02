@@ -22,13 +22,24 @@
           "api_base_url": "API Base URL",
           "api_base_url_v2": "API Base URL v2"
         }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate Smart account",
+        "description": "The Smart cloud rejected the stored login for {username}. Enter the current password. If the vehicle was removed from the account, add it again in the Smart app first.",
+        "data": {
+          "password": "Password"
+        }
       }
     },
     "error": {
       "auth": "Auth failed, please check your username and password",
-      "custom_endpoints_required": "At least one custom endpoint URL must be provided"
+      "custom_endpoints_required": "At least one custom endpoint URL must be provided",
+      "vehicle_not_found": "The vehicle of this entry is no longer in the Smart account. Add it again in the Smart app, then try again."
     },
-    "abort": {}
+    "abort": {
+      "reauth_successful": "Re-authentication was successful",
+      "already_configured": "This vehicle is already configured"
+    }
   },
   "options": {
     "step": {

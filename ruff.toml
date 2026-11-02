@@ -1,5 +1,6 @@
-# Assume Python 3.14
-target-version = "py314"
+# Oldest Python supported by the minimum Home Assistant version in hacs.json;
+# newer syntax (e.g. unparenthesized except clauses) breaks older installs
+target-version = "py312"
 
 [lint]
 # F - Enable Pyflakes

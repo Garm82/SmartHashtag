@@ -61,15 +61,10 @@ def test_extract_url_from_text():
         extract_url("no link here")
 
 
-class _FakeHop:
-    def __init__(self, url: str) -> None:
-        self.url = url
-
-
 class _FakeResponse:
-    def __init__(self, url: str, history: list[str] | None = None) -> None:
-        self.url = url
-        self.history = [_FakeHop(u) for u in history or []]
+    def __init__(self, status: int, location: str | None) -> None:
+        self.status = status
+        self.headers = {"Location": location} if location else {}
 
     async def __aenter__(self):
         return self
@@ -79,23 +74,27 @@ class _FakeResponse:
 
 
 class _FakeSession:
-    def __init__(self, final_url: str, history: list[str] | None = None) -> None:
-        self.final_url = final_url
-        self.history = history
+    """Answers each URL with a redirect from ``redirects`` or a 200."""
+
+    def __init__(self, redirects: dict[str, str] | None = None) -> None:
+        self.redirects = redirects or {}
         self.requested: list[str] = []
 
     def get(self, url, **kwargs):
+        assert kwargs.get("allow_redirects") is False
         self.requested.append(url)
-        return _FakeResponse(self.final_url, self.history)
+        location = self.redirects.get(url)
+        return _FakeResponse(302 if location else 200, location)
+
+
+SHORT_URL = "https://maps.app.goo.gl/W9bykxJhd8GsNXvUA"
 
 
 @pytest.mark.asyncio()
 async def test_resolve_follows_short_link():
-    session = _FakeSession(DIR_URL)
-    location = await async_resolve_shared_location(
-        session, "https://maps.app.goo.gl/W9bykxJhd8GsNXvUA"
-    )
-    assert session.requested == ["https://maps.app.goo.gl/W9bykxJhd8GsNXvUA"]
+    session = _FakeSession({SHORT_URL: DIR_URL})
+    location = await async_resolve_shared_location(session, SHORT_URL)
+    assert session.requested == [SHORT_URL, DIR_URL]
     assert location.latitude == pytest.approx(49.6542632)
 
 
@@ -103,17 +102,15 @@ async def test_resolve_follows_short_link():
 async def test_resolve_uses_maps_url_from_consent_page():
     """The EU consent page carries the Maps URL in its continue parameter."""
     consent = "https://consent.google.com/m?continue=" + quote(DIR_URL, safe="")
-    session = _FakeSession(consent, history=["https://maps.app.goo.gl/x", DIR_URL])
-    location = await async_resolve_shared_location(
-        session, "https://maps.app.goo.gl/W9bykxJhd8GsNXvUA"
-    )
+    session = _FakeSession({SHORT_URL: consent})
+    location = await async_resolve_shared_location(session, SHORT_URL)
     assert location.longitude == pytest.approx(8.5675885)
 
 
 @pytest.mark.asyncio()
 async def test_resolve_refuses_foreign_hosts():
     """Links to other sites are never requested."""
-    session = _FakeSession(DIR_URL)
+    session = _FakeSession()
     with pytest.raises(SharedLocationError):
         await async_resolve_shared_location(session, "http://192.168.1.1/admin")
     assert session.requested == []
@@ -121,11 +118,18 @@ async def test_resolve_refuses_foreign_hosts():
 
 @pytest.mark.asyncio()
 async def test_resolve_refuses_redirect_to_foreign_host():
-    session = _FakeSession("https://example.com/maps/dir/1,2/x/")
+    """A redirect off Google is refused before the target is requested."""
+    session = _FakeSession({SHORT_URL: "http://192.168.1.1/admin"})
     with pytest.raises(SharedLocationError):
-        await async_resolve_shared_location(
-            session, "https://maps.app.goo.gl/W9bykxJhd8GsNXvUA"
-        )
+        await async_resolve_shared_location(session, SHORT_URL)
+    assert session.requested == [SHORT_URL]
+
+
+@pytest.mark.asyncio()
+async def test_resolve_refuses_redirect_loops():
+    session = _FakeSession({SHORT_URL: SHORT_URL})
+    with pytest.raises(SharedLocationError):
+        await async_resolve_shared_location(session, SHORT_URL)
 
 
 async def _setup_entry(hass: HomeAssistant) -> str:

@@ -3,10 +3,9 @@
 from homeassistant.components.device_tracker import SourceType, TrackerEntity
 from homeassistant.core import HomeAssistant
 
-from custom_components.smarthashtag.entity import SmartHashtagEntity
-
 from .const import CONF_VEHICLE, LOGGER
 from .coordinator import SmartHashtagDataUpdateCoordinator
+from .entity import SmartHashtagEntity
 
 # API returns position in 1/3600000 of a degree (1/10000 arc seconds)
 POSITION_SCALE_FACTOR = 3600000
@@ -18,14 +17,13 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
 
     This asynchronous function initializes and adds a SmartVehicleLocation entity using the configuration entry's
     runtime data. It retrieves the coordinator from the entry, extracts the vehicle information from the coordinator's
-    configuration (using the CONF_VEHICLE key), and schedules the addition of the device tracker with an immediate update.
-    Finally, it triggers an asynchronous refresh of the coordinator to update the device state.
+    configuration (using the CONF_VEHICLE key) and adds the device tracker. The coordinator already holds fresh data
+    from the first refresh, so no extra refresh is requested.
 
     Parameters:
         hass (HomeAssistant): The Home Assistant instance.
         entry (ConfigEntry): Configuration entry that contains runtime data for the device tracker.
         async_add_entities (Callable[[List[Entity], bool], None]): Function to add device tracker entities to Home Assistant.
-            The entity is added with update_before_add set to True.
 
     Returns:
         None
@@ -33,10 +31,7 @@ async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities):
     coordinator = entry.runtime_data
     vehicle = coordinator.config_entry.data.get(CONF_VEHICLE)
 
-    async_add_entities(
-        [SmartVehicleLocation(coordinator, vehicle)], update_before_add=True
-    )
-    await coordinator.async_request_refresh()
+    async_add_entities([SmartVehicleLocation(coordinator, vehicle)])
 
 
 class SmartVehicleLocation(SmartHashtagEntity, TrackerEntity):

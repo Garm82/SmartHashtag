@@ -11,7 +11,7 @@ import httpx
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 from pysmarthashtag.account import SmartAccount
 from pysmarthashtag.models import SmartAPIError, SmartAuthError, SmartRemoteServiceError
@@ -92,29 +92,6 @@ class SmartHashtagDataUpdateCoordinator(DataUpdateCoordinator):
         self._consecutive_failures = 0
         self._unbound_failures = 0
         self._last_error: str | None = None
-
-    async def _async_setup(self) -> None:
-        """
-        Asynchronously set up the data update coordinator.
-
-        This method is called when the coordinator is initialized. It sets the update interval
-        based on the configuration entry options and prepares the coordinator for data updates.
-        """
-        try:
-            await self.account.get_vehicles()
-        except SmartVehicleUnboundError as exception:
-            # Setup has no history to tell a transient 8040 from a real one, so
-            # let HA retry with backoff instead of demanding reauth up front.
-            # A genuine unbinding still surfaces from the update path.
-            raise ConfigEntryNotReady(UNBOUND_VIN_AUTH_MESSAGE) from exception
-        except SmartAuthError as exception:
-            raise ConfigEntryAuthFailed(exception) from exception
-        except SmartRemoteServiceError as exception:
-            raise UpdateFailed(exception) from exception
-        except SmartAPIError as exception:
-            LOGGER.info(f"API access failed with: {exception}")
-        except Exception as exception:
-            raise UpdateFailed(exception) from exception
 
     async def _async_update_data(self):
         """

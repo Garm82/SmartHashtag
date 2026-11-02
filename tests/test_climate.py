@@ -348,6 +348,19 @@ async def test_climate_turn_on_restores_heating_levels(
     assert vehicle.climate_control.heating_levels[HeatingLocation.DRIVER_SEAT] == 0
     assert vehicle.climate_control.heating_levels[HeatingLocation.STEERING_WHEEL] == 0
 
+    # Record the levels the preconditioning command is sent with. The refresh
+    # after the command builds a new ClimateControll again, so the levels have
+    # to be checked at call time.
+    control = vehicle.climate_control
+    original_conditioning = control.set_climate_conditioning
+    sent_levels = {}
+
+    async def _record_conditioning(temp, active):
+        sent_levels.update(control.heating_levels)
+        return await original_conditioning(temp, active)
+
+    control.set_climate_conditioning = _record_conditioning
+
     # Turn on climate — this should restore heating levels from config before the API call
     entity_id = get_climate_entity_id(hass)
     assert entity_id is not None
@@ -360,10 +373,10 @@ async def test_climate_turn_on_restores_heating_levels(
     )
     await hass.async_block_till_done()
 
-    # After turn_on, the heating levels should have been restored from the config entry
-    assert vehicle.climate_control.heating_levels[HeatingLocation.DRIVER_SEAT] == 2
-    assert vehicle.climate_control.heating_levels[HeatingLocation.PASSENGER_SEAT] == 1
-    assert vehicle.climate_control.heating_levels[HeatingLocation.STEERING_WHEEL] == 3
+    # The command was sent with the heating levels restored from the config entry
+    assert sent_levels[HeatingLocation.DRIVER_SEAT] == 2
+    assert sent_levels[HeatingLocation.PASSENGER_SEAT] == 1
+    assert sent_levels[HeatingLocation.STEERING_WHEEL] == 3
 
 
 @pytest.mark.asyncio()

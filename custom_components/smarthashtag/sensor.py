@@ -227,8 +227,8 @@ class SmartHashtagBatteryRangeSensor(SmartHashtagEntity, SensorEntity):
                 return None
             if isinstance(data, ValueWithUnit):
                 return data.unit
-
-            return data
+            # Plain values (flags, raw codes) carry no unit
+            return self.entity_description.native_unit_of_measurement
 
         except AttributeError as err:
             LOGGER.debug(

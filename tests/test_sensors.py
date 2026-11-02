@@ -117,17 +117,18 @@ async def test_odometer_updates(hass: HomeAssistant, smart_fixture: respx.Router
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
+    # Setup fetches the vehicle status exactly once
     state = hass.states.get("sensor.smart_odometer")
 
     assert state
-    assert state.state == "502"
+    assert state.state == "500"
 
     await entry.runtime_data.async_refresh()
 
     state = hass.states.get("sensor.smart_odometer")
 
     assert state
-    assert state.state == "503"
+    assert state.state == "501"
 
 
 @pytest.mark.asyncio()
@@ -173,14 +174,14 @@ async def test_battery_updates(hass: HomeAssistant, smart_fixture: respx.Router)
     state = hass.states.get("sensor.smart_battery")
 
     assert state
-    assert state.state == "45"
+    assert state.state == "47"
 
     await entry.runtime_data.async_refresh()
 
     state = hass.states.get("sensor.smart_battery")
 
     assert state
-    assert state.state == "44"
+    assert state.state == "46"
 
 
 @pytest.mark.asyncio()

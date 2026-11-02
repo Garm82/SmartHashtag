@@ -103,7 +103,10 @@ async def test_lock_confirmed_by_vehicle(
     entity_id = get_lock_entity_id(hass)
     coordinator = hass.config_entries.async_entries(DOMAIN)[0].runtime_data
 
-    await _call_lock_service(hass, "lock", entity_id)
+    # Hold back the refresh requested after the command, so the pending state
+    # is visible before the vehicle reports back
+    with patch.object(coordinator, "async_request_refresh", AsyncMock()):
+        await _call_lock_service(hass, "lock", entity_id)
 
     payload = _telematics_payloads(smart_fixture)[-1]
     assert payload["serviceId"] == "RDL_2"
@@ -200,13 +203,20 @@ async def test_trunk_lock_sends_command(
     """Test that locking the trunk sends RDL_2 for the trunk only."""
     await _setup_entry(hass)
     entity_id = get_trunk_lock_entity_id(hass)
+    coordinator = hass.config_entries.async_entries(DOMAIN)[0].runtime_data
 
-    await _call_lock_service(hass, "lock", entity_id)
+    with patch.object(coordinator, "async_request_refresh", AsyncMock()):
+        await _call_lock_service(hass, "lock", entity_id)
 
     payload = _telematics_payloads(smart_fixture)[-1]
     assert payload["serviceId"] == "RDL_2"
     assert payload["serviceParameters"] == [{"key": "target", "value": "trunk"}]
     assert hass.states.get(entity_id).state == LockState.LOCKING
+
+    # The mocked vehicle reports the trunk locked, which confirms the command
+    await coordinator.async_refresh()
+    await hass.async_block_till_done()
+    assert hass.states.get(entity_id).state == LockState.LOCKED
 
 
 @pytest.mark.asyncio()

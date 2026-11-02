@@ -48,7 +48,7 @@ async def async_setup_entry(
     if hasattr(vehicles[vehicle].door_lock_control, "lock_trunk"):
         entities.append(SmartTrunkLock(coordinator, vehicle))
 
-    async_add_entities(entities, update_before_add=True)
+    async_add_entities(entities)
 
 
 class SmartDoorLock(SmartHashtagEntity, LockEntity):

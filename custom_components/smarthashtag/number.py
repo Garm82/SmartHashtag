@@ -46,9 +46,7 @@ async def async_setup_entry(
         )
         return
 
-    async_add_entities(
-        [SmartChargingLimitNumber(coordinator, vehicle)], update_before_add=True
-    )
+    async_add_entities([SmartChargingLimitNumber(coordinator, vehicle)])
 
 
 class SmartChargingLimitNumber(SmartHashtagEntity, NumberEntity):

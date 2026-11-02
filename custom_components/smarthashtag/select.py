@@ -111,7 +111,6 @@ async def async_setup_entry(
         entry (SmartHashtagConfigEntry): The configuration entry containing runtime data for
             the smart hashtag integration.
         async_add_entities (Callable): A callback function to add entities to Home Assistant.
-            The entities will be updated before being added.
 
     Returns:
         None
@@ -136,7 +135,7 @@ async def async_setup_entry(
         for r_location in RearHeatingLocation:
             entities.append(SmartRearHeatedLocation(coordinator, vehicle, r_location))
 
-    async_add_entities(entities, update_before_add=True)
+    async_add_entities(entities)
 
 
 class SmartPreHeatedLocation(SmartHashtagEntity, SelectEntity):
@@ -224,7 +223,6 @@ class SmartPreHeatedLocation(SmartHashtagEntity, SelectEntity):
             return STEERING_HEATER_OPTIONS[0]
 
         current_value = self._get_level_for_location(self._location)
-        self._vehicle.climate_control.set_heating_level(self._location, current_value)
         current_str = next(
             (
                 key

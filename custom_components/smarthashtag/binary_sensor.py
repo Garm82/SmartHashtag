@@ -148,7 +148,7 @@ def _state_flag(attr: str) -> Callable[[Any, str], bool | None]:
         value = getattr(vehicle.state, attr)
         try:
             return int(value) == 1
-        except TypeError, ValueError:
+        except (TypeError, ValueError):
             return None
 
     return _is_on

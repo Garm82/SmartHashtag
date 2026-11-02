@@ -6,6 +6,7 @@ from datetime import timedelta
 import pytest
 import respx
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import entity_registry as er
 from pysmarthashtag.control.climate import ClimateControll
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -317,9 +318,10 @@ async def test_defrost_switch_keeps_reported_state_when_command_fails(
 
     vehicle.climate_control.set_defrost = _rejected
 
-    await hass.services.async_call(
-        "switch", "turn_on", {"entity_id": entity_id}, blocking=True
-    )
+    with pytest.raises(HomeAssistantError):
+        await hass.services.async_call(
+            "switch", "turn_on", {"entity_id": entity_id}, blocking=True
+        )
     await hass.async_block_till_done()
 
     assert hass.states.get(entity_id).state == "off"

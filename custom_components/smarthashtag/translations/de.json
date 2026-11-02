@@ -22,13 +22,24 @@
           "api_base_url": "API-Basis-URL",
           "api_base_url_v2": "API-Basis-URL v2"
         }
+      },
+      "reauth_confirm": {
+        "title": "Smart-Konto neu anmelden",
+        "description": "Die Smart-Cloud hat die gespeicherte Anmeldung für {username} abgelehnt. Gib das aktuelle Passwort ein. Wurde das Fahrzeug aus dem Konto entfernt, füge es zuerst in der Smart-App wieder hinzu.",
+        "data": {
+          "password": "Passwort"
+        }
       }
     },
     "error": {
       "auth": "Authentifizierung fehlgeschlagen, bitte überprüfen Sie Ihre Anmeldeinformationen und versuchen Sie es erneut.",
-      "custom_endpoints_required": "Mindestens eine benutzerdefinierte Endpunkt-URL muss angegeben werden"
+      "custom_endpoints_required": "Mindestens eine benutzerdefinierte Endpunkt-URL muss angegeben werden",
+      "vehicle_not_found": "Das Fahrzeug dieses Eintrags ist nicht mehr im Smart-Konto. Füge es in der Smart-App wieder hinzu und versuche es erneut."
     },
-    "abort": {}
+    "abort": {
+      "reauth_successful": "Die erneute Anmeldung war erfolgreich",
+      "already_configured": "Dieses Fahrzeug ist bereits eingerichtet"
+    }
   },
   "options": {
     "step": {

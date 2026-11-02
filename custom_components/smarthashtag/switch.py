@@ -78,7 +78,7 @@ async def async_setup_entry(
     if getattr(vehicles[vehicle], "journal_recording_control", None) is not None:
         entities.append(SmartTripRecordingSwitch(coordinator, vehicle))
 
-    async_add_entities(entities, update_before_add=True)
+    async_add_entities(entities)
 
 
 class SmartPendingStateSwitch(SmartHashtagEntity, SwitchEntity):
@@ -161,30 +161,30 @@ class SmartPendingStateSwitch(SmartHashtagEntity, SwitchEntity):
         )
         try:
             success = await self._send_command(active)
-        except Exception:
-            LOGGER.exception(
-                "Error setting %s for vehicle %s",
-                self._command_name,
-                getattr(self._vehicle, "vin", "unknown"),
-            )
-            success = False
-
-        if success:
-            # Show the requested state until the vehicle reports it
-            self._pending_state = active
-            self._pending_until = dt_util.utcnow() + timedelta(
-                seconds=PENDING_STATE_TIMEOUT
-            )
-            self.coordinator.set_update_interval(
-                self._interval_key, timedelta(seconds=FAST_INTERVAL)
-            )
-        else:
-            LOGGER.warning(
-                "Vehicle %s did not accept the %s command",
-                self._vehicle.vin,
-                self._command_name,
-            )
+        except Exception as err:
             self._clear_pending_state()
+            self.async_write_ha_state()
+            raise HomeAssistantError(
+                f"Failed to set the {self._command_name} of vehicle "
+                f"{self._vehicle.vin}: {err}"
+            ) from err
+
+        if not success:
+            self._clear_pending_state()
+            self.async_write_ha_state()
+            raise HomeAssistantError(
+                f"Vehicle {self._vehicle.vin} did not accept the "
+                f"{self._command_name} command"
+            )
+
+        # Show the requested state until the vehicle reports it
+        self._pending_state = active
+        self._pending_until = dt_util.utcnow() + timedelta(
+            seconds=PENDING_STATE_TIMEOUT
+        )
+        self.coordinator.set_update_interval(
+            self._interval_key, timedelta(seconds=FAST_INTERVAL)
+        )
         self.async_write_ha_state()
 
         await self.coordinator.async_request_refresh()
@@ -556,7 +556,20 @@ class SmartWindowVentilationSwitch(SmartWindowControlSwitch):
         return await self._vehicle.window_control.set_ventilation(active)
 
     async def _set_active(self, active: bool) -> None:
-        await super()._set_active(active)
+        # The vehicle never reports a ventilation state, so there is nothing
+        # to wait for: send the command and keep the normal polling interval.
+        if self._vehicle is None:
+            raise HomeAssistantError(f"Vehicle {self._vehicle_vin} is unavailable")
+        try:
+            success = await self._send_command(active)
+        except Exception as err:
+            raise HomeAssistantError(
+                f"Failed to set the {self._log_name} of vehicle {self._vehicle.vin}: {err}"
+            ) from err
+        if not success:
+            raise HomeAssistantError(
+                f"Vehicle {self._vehicle.vin} did not accept the {self._log_name} command"
+            )
         self._assumed_state = active
         self.async_write_ha_state()
 

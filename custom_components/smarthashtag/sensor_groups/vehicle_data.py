@@ -51,14 +51,14 @@ def _status(vehicle: Any, *path: str) -> Any:
 def _as_float(value: Any) -> float | None:
     try:
         return float(value)
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return None
 
 
 def _as_int(value: Any) -> int | None:
     try:
         return int(float(value))
-    except TypeError, ValueError:
+    except (TypeError, ValueError):
         return None
 
 
@@ -69,7 +69,7 @@ def _from_millis(value: Any) -> datetime | None:
         return None
     try:
         return datetime.fromtimestamp(millis / 1000, tz=UTC)
-    except OverflowError, OSError, ValueError:
+    except (OverflowError, OSError, ValueError):
         return None
 
 

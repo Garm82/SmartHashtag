@@ -109,8 +109,11 @@ async def async_setup_entry(
 
     # Saved select profiles are local settings; only reload for other changes so a
     # multi-select followed by a climate start isn't interrupted by a reload.
+    # A new password comes from the reauth flow, which reloads the entry itself.
     def _non_select_data() -> dict:
-        return {k: v for k, v in entry.data.items() if k != "selects"}
+        return {
+            k: v for k, v in entry.data.items() if k not in ("selects", CONF_PASSWORD)
+        }
 
     known = {"data": _non_select_data(), "options": dict(entry.options)}
 

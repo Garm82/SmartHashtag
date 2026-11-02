@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from urllib.parse import parse_qs, unquote_plus, urlparse
+from urllib.parse import parse_qs, unquote_plus, urljoin, urlparse
 
 import aiohttp
 
 from .const import LOGGER
 
 # Only these hosts are fetched, so a shared link cannot make Home Assistant
-# request arbitrary addresses.
+# request arbitrary addresses. Redirects are followed by hand and every hop is
+# checked against this list before it is requested.
 ALLOWED_HOSTS = ("maps.app.goo.gl", "goo.gl", "maps.google.com", "google.com")
+MAX_REDIRECTS = 10
 USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120 Safari/537.36"
 )
@@ -42,6 +44,11 @@ class SharedLocation:
 def _host_allowed(host: str | None) -> bool:
     host = (host or "").lower()
     return any(host == h or host.endswith("." + h) for h in ALLOWED_HOSTS)
+
+
+def _url_allowed(url: str) -> bool:
+    parsed = urlparse(url)
+    return parsed.scheme in ("http", "https") and _host_allowed(parsed.hostname)
 
 
 def extract_url(text: str) -> str:
@@ -112,24 +119,43 @@ def _candidate_urls(urls: list[str]) -> list[str]:
     return [url for url in result if _host_allowed(urlparse(url).hostname)]
 
 
+async def _follow_redirects(session: aiohttp.ClientSession, url: str) -> list[str]:
+    """Follow the redirects of a shared link, refusing hops to other hosts."""
+    chain = [url]
+    for _ in range(MAX_REDIRECTS):
+        try:
+            async with session.get(
+                url,
+                headers={"User-Agent": USER_AGENT},
+                timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
+                allow_redirects=False,
+            ) as response:
+                location = (
+                    response.headers.get("Location")
+                    if 300 <= response.status < 400
+                    else None
+                )
+        except (aiohttp.ClientError, TimeoutError) as err:
+            raise SharedLocationError(f"the link could not be opened ({err})") from err
+        if not location:
+            return chain
+        url = urljoin(url, location)
+        if not _url_allowed(url):
+            LOGGER.debug("Refusing redirect of a shared link to %s", url.split("?")[0])
+            raise SharedLocationError("the link did not lead to Google Maps")
+        chain.append(url)
+    raise SharedLocationError("the link redirects too often")
+
+
 async def async_resolve_shared_location(
     session: aiohttp.ClientSession, text: str
 ) -> SharedLocation:
     """Turn a shared maps link (or text containing one) into a destination."""
     url = extract_url(text)
-    if not _host_allowed(urlparse(url).hostname):
+    if not _url_allowed(url):
         raise SharedLocationError("only Google Maps links are supported")
 
-    try:
-        async with session.get(
-            url,
-            headers={"User-Agent": USER_AGENT},
-            timeout=aiohttp.ClientTimeout(total=REQUEST_TIMEOUT),
-            allow_redirects=True,
-        ) as response:
-            chain = [str(r.url) for r in response.history] + [str(response.url)]
-    except (aiohttp.ClientError, TimeoutError) as err:
-        raise SharedLocationError(f"the link could not be opened ({err})") from err
+    chain = await _follow_redirects(session, url)
 
     candidates = _candidate_urls(chain)
     LOGGER.debug("Shared link led to %s", [c.split("?")[0] for c in chain])

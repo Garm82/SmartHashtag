@@ -62,7 +62,7 @@ async def async_setup_entry(
 
     entities.append(SmartConditioningMode(coordinator, vehicle))
 
-    async_add_entities(entities, update_before_add=True)
+    async_add_entities(entities)
 
 
 class SmartConditioningMode(SmartHashtagEntity, ClimateEntity):
@@ -160,8 +160,15 @@ class SmartConditioningMode(SmartHashtagEntity, ClimateEntity):
         self._attr_name = f"Smart {vehicle} Conditioning"
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_climate"
         try:
-            self._temperature = self.coordinator.config_entry.options.get(
-                CONF_CONDITIONING_TEMP, DEFAULT_CONDITIONING_TEMP
+            # Older option values could lie outside what the car accepts
+            self._temperature = min(
+                max(
+                    self.coordinator.config_entry.options.get(
+                        CONF_CONDITIONING_TEMP, DEFAULT_CONDITIONING_TEMP
+                    ),
+                    self._attr_min_temp,
+                ),
+                self._attr_max_temp,
             )
             self._attr_target_temperature = self._temperature
         except Exception as e:
@@ -268,7 +275,7 @@ class SmartConditioningMode(SmartHashtagEntity, ClimateEntity):
         """Return the current temperature."""
         if self._vehicle is None or self._vehicle.climate is None:
             return None
-        return self._vehicle.climate.interior_temperature.value
+        return getattr(self._vehicle.climate.interior_temperature, "value", None)
 
     def set_fan_mode(self, fan_mode: str) -> None:
         """Set the fan mode."""
