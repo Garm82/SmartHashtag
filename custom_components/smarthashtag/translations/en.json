@@ -628,6 +628,35 @@
       "vehicle_software": {
         "name": "Vehicle software"
       }
+    },
+    "binary_sensor": {
+      "camping_mode": {
+        "name": "Camping mode"
+      },
+      "valet_mode": {
+        "name": "Valet mode"
+      },
+      "park_comfort": {
+        "name": "Park comfort"
+      },
+      "trip_recording": {
+        "name": "Trip recording"
+      },
+      "battery_pulse_heating": {
+        "name": "Battery pulse heating"
+      },
+      "cabin_overheat_protection": {
+        "name": "Cabin overheat protection"
+      },
+      "car_locator": {
+        "name": "Car locator"
+      },
+      "position_upload": {
+        "name": "Position upload"
+      },
+      "privacy_mode": {
+        "name": "Privacy mode"
+      }
     }
   },
   "services": {

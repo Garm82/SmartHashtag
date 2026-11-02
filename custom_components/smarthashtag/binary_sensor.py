@@ -157,24 +157,28 @@ def _state_flag(attr: str) -> Callable[[Any, str], bool | None]:
 STATE_ENTITIES = (
     SmartHashtagBinarySensorEntityDescription(
         key="camping_mode",
+        translation_key="camping_mode",
         name="Camping mode",
         icon="mdi:tent",
         is_on_fn=_state_flag("camping_mode_active"),
     ),
     SmartHashtagBinarySensorEntityDescription(
         key="valet_mode",
+        translation_key="valet_mode",
         name="Valet mode",
         icon="mdi:account-tie-hat",
         is_on_fn=_state_flag("valet_mode_state"),
     ),
     SmartHashtagBinarySensorEntityDescription(
         key="park_comfort",
+        translation_key="park_comfort",
         name="Park comfort",
         icon="mdi:car-seat",
         is_on_fn=_state_flag("park_comfort_state"),
     ),
     SmartHashtagBinarySensorEntityDescription(
         key="trip_recording",
+        translation_key="trip_recording",
         name="Trip recording",
         icon="mdi:map-marker-path",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -182,6 +186,7 @@ STATE_ENTITIES = (
     ),
     SmartHashtagBinarySensorEntityDescription(
         key="battery_pulse_heating",
+        translation_key="battery_pulse_heating",
         name="Battery pulse heating",
         icon="mdi:heat-wave",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -190,6 +195,7 @@ STATE_ENTITIES = (
     ),
     SmartHashtagBinarySensorEntityDescription(
         key="cabin_overheat_protection",
+        translation_key="cabin_overheat_protection",
         name="Cabin overheat protection",
         icon="mdi:thermometer-alert",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -198,6 +204,7 @@ STATE_ENTITIES = (
     ),
     SmartHashtagBinarySensorEntityDescription(
         key="car_locator",
+        translation_key="car_locator",
         name="Car locator",
         icon="mdi:crosshairs-gps",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -206,6 +213,7 @@ STATE_ENTITIES = (
     ),
     SmartHashtagBinarySensorEntityDescription(
         key="position_upload",
+        translation_key="position_upload",
         name="Position upload",
         icon="mdi:map-marker-up",
         entity_category=EntityCategory.DIAGNOSTIC,
@@ -214,6 +222,7 @@ STATE_ENTITIES = (
     ),
     SmartHashtagBinarySensorEntityDescription(
         key="privacy_mode",
+        translation_key="privacy_mode",
         name="Privacy mode",
         icon="mdi:incognito",
         entity_category=EntityCategory.DIAGNOSTIC,
