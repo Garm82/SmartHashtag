@@ -590,7 +590,7 @@
         "name": "Letzte Fahrt Ende"
       },
       "recorded_trips": {
-        "name": "Aufgezeichnete Fahrten"
+        "name": "Fahrten (letzte 14 Tage)"
       },
       "parked_since": {
         "name": "Geparkt seit"

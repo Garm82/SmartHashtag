@@ -248,7 +248,9 @@ class SmartConditioningMode(SmartHashtagEntity, ClimateEntity):
             seconds=PENDING_STATE_TIMEOUT
         )
         self.coordinator.set_update_interval(
-            "climate", timedelta(seconds=FAST_INTERVAL)
+            "climate",
+            timedelta(seconds=FAST_INTERVAL),
+            expires_after=timedelta(seconds=PENDING_STATE_TIMEOUT),
         )
         self.async_write_ha_state()
         await self.coordinator.async_request_refresh()

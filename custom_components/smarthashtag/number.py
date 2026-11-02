@@ -145,7 +145,9 @@ class SmartChargingLimitNumber(SmartHashtagEntity, NumberEntity):
             seconds=PENDING_STATE_TIMEOUT
         )
         self.coordinator.set_update_interval(
-            "charging_limit", timedelta(seconds=FAST_INTERVAL)
+            "charging_limit",
+            timedelta(seconds=FAST_INTERVAL),
+            expires_after=timedelta(seconds=PENDING_STATE_TIMEOUT),
         )
         self.async_write_ha_state()
 

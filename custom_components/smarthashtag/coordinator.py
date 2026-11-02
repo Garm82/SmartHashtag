@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import traceback
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 import httpx
@@ -13,6 +13,7 @@ from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.util import dt as dt_util
 from pysmarthashtag.account import SmartAccount
 from pysmarthashtag.models import SmartAPIError, SmartAuthError, SmartRemoteServiceError
 
@@ -88,7 +89,8 @@ class SmartHashtagDataUpdateCoordinator(DataUpdateCoordinator):
             ),
             config_entry=entry,
         )
-        self._update_intervals = {}
+        self._update_intervals: dict[str, timedelta] = {}
+        self._interval_expiry: dict[str, datetime] = {}
         self._consecutive_failures = 0
         self._unbound_failures = 0
         self._last_error: str | None = None
@@ -119,6 +121,8 @@ class SmartHashtagDataUpdateCoordinator(DataUpdateCoordinator):
             ConfigEntryAuthFailed: If a SmartAuthError is caught, indicating an authentication failure.
             UpdateFailed: If a SmartRemoteServiceError is raised during the data retrieval.
         """
+        # Runs on every refresh, also while the cloud keeps failing
+        self._expire_update_intervals()
         try:
             async with asyncio.timeout(API_TIMEOUT):
                 await self.account.get_vehicles()
@@ -267,39 +271,61 @@ class SmartHashtagDataUpdateCoordinator(DataUpdateCoordinator):
         else:
             self.reset_update_interval("driving")
 
-    def set_update_interval(self, key: str, deltatime: timedelta) -> None:
-        """Update intervals by key and select the shortest"""
+    def set_update_interval(
+        self,
+        key: str,
+        deltatime: timedelta,
+        expires_after: timedelta | None = None,
+    ) -> None:
+        """Request an update interval under a key; the shortest one wins.
+
+        With ``expires_after`` the request lapses on its own. Entities that
+        poll fast after a command use it, because their own timeout only runs
+        when the coordinator notifies them, which Home Assistant stops doing
+        while refreshes keep failing.
+        """
+        if expires_after is None:
+            self._interval_expiry.pop(key, None)
+        else:
+            self._interval_expiry[key] = dt_util.utcnow() + expires_after
         if self._update_intervals.get(key) == deltatime:
             return
         LOGGER.info("Update frequency set for %s: %s", key, deltatime)
         self._update_intervals[key] = deltatime
-        sorted_intervals = list(self._update_intervals.values())
-        sorted_intervals.sort()
-        if sorted_intervals:
-            self.update_interval = sorted_intervals[0]
+        self._apply_shortest_interval()
 
     def reset_update_interval(self, key: str):
         """Remove interval for this key and select shortest remaining or default"""
+        self._interval_expiry.pop(key, None)
         if key in self._update_intervals:
             del self._update_intervals[key]
             LOGGER.info("Update frequency reset for %s", key)
+        self._apply_shortest_interval()
 
-        # Recalculate the update interval
-        if self._update_intervals:
-            sorted_intervals = list(self._update_intervals.values())
-            sorted_intervals.sort()
-            self.update_interval = sorted_intervals[0]
-        elif self.config_entry:
-            # No active intervals, revert to configured default
-            self.update_interval = timedelta(
-                seconds=self.config_entry.options.get(
-                    CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
-                )
-            )
-        else:
-            # Fallback to default if no config entry
-            self.update_interval = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
+    def _expire_update_intervals(self) -> None:
+        """Drop interval requests whose time is up."""
+        now = dt_util.utcnow()
+        for key, expiry in list(self._interval_expiry.items()):
+            if now >= expiry:
+                LOGGER.debug("Update frequency request for %s expired", key)
+                self.reset_update_interval(key)
+
+    def _scan_interval(self) -> timedelta:
+        if self.config_entry is None:
             LOGGER.warning("Using fallback update interval due to missing config_entry")
+            return timedelta(seconds=DEFAULT_SCAN_INTERVAL)
+        return timedelta(
+            seconds=self.config_entry.options.get(
+                CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL
+            )
+        )
+
+    def _apply_shortest_interval(self) -> None:
+        # The configured scan interval is a ceiling: a requested interval may
+        # only make polling faster, never slower.
+        self.update_interval = min(
+            [*self._update_intervals.values(), self._scan_interval()]
+        )
 
 
 def _is_charging(vehicle: Any) -> bool:

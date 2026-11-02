@@ -590,7 +590,7 @@
         "name": "Last trip end"
       },
       "recorded_trips": {
-        "name": "Recorded trips"
+        "name": "Trips (last 14 days)"
       },
       "parked_since": {
         "name": "Parked since"

@@ -7,7 +7,7 @@ import pytest
 import respx
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from pysmarthashtag.models import ValueWithUnit
+from pysmarthashtag.models import SmartAPIError, SmartRemoteServiceError, ValueWithUnit
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.smarthashtag.const import (
@@ -257,3 +257,65 @@ async def test_scan_interval_option_applies_from_start(
     """The configured scan interval is used without waiting for a reset."""
     coordinator, _ = await _setup_entry(hass, options={"scan_interval": 600})
     assert coordinator.update_interval == timedelta(seconds=600)
+
+
+# --- Expiry while the cloud fails / scan interval as ceiling ------------------
+
+
+@pytest.mark.asyncio()
+@pytest.mark.parametrize(
+    "error",
+    [SmartRemoteServiceError("service down"), SmartAPIError("transient")],
+)
+async def test_fast_polling_expires_while_refreshes_fail(
+    hass: HomeAssistant, smart_fixture: respx.Router, freezer, error
+):
+    """Home Assistant stops notifying entities after failed refreshes; the
+    coordinator itself has to end the fast polling of a pending command."""
+    coordinator, vehicle = await _setup_entry(hass)
+    entity_id = _entity_id(hass, "switch", "charging")
+    vehicle.battery.charging_status = "NOT_CHARGING"
+
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": entity_id}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert "charging_switch" in coordinator._update_intervals
+
+    coordinator.account.get_vehicles = AsyncMock(side_effect=error)
+    for _ in range(3):
+        await coordinator.async_refresh()
+    assert "charging_switch" in coordinator._update_intervals
+
+    freezer.tick(timedelta(seconds=PENDING_STATE_TIMEOUT + 1))
+    await coordinator.async_refresh()
+
+    assert "charging_switch" not in coordinator._update_intervals
+    assert coordinator.update_interval == timedelta(seconds=300)
+
+
+@pytest.mark.asyncio()
+async def test_activity_interval_never_slows_down_polling(
+    hass: HomeAssistant, smart_fixture: respx.Router
+):
+    """A charging interval longer than the scan interval must not slow polling."""
+    coordinator, vehicle = await _setup_entry(
+        hass, options={"scan_interval": 20, CONF_CHARGING_INTERVAL: 30}
+    )
+    vehicle.battery.charging_current = ValueWithUnit(16.0, "A")
+    coordinator._update_activity_intervals()
+    assert coordinator.update_interval == timedelta(seconds=20)
+
+
+@pytest.mark.asyncio()
+async def test_trip_recording_unknown_without_state(
+    hass: HomeAssistant, smart_fixture: respx.Router
+):
+    """Without a TBox state the trip recording switch is unknown, not off."""
+    coordinator, vehicle = await _setup_entry(hass)
+    vehicle.state = None
+    coordinator.async_update_listeners()
+    await hass.async_block_till_done()
+    assert hass.states.get(_entity_id(hass, "switch", "trip_recording")).state == (
+        "unknown"
+    )

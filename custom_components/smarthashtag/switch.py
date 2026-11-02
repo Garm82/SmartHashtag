@@ -115,8 +115,8 @@ class SmartPendingStateSwitch(SmartHashtagEntity, SwitchEntity):
         self._attr_unique_id = f"{self._attr_unique_id}_{self._interval_key}"
 
     @property
-    def _reported_state(self) -> bool:
-        """Return the state reported by the vehicle."""
+    def _reported_state(self) -> bool | None:
+        """Return the state reported by the vehicle, None if unknown."""
         raise NotImplementedError
 
     async def _send_command(self, active: bool) -> bool:
@@ -124,7 +124,7 @@ class SmartPendingStateSwitch(SmartHashtagEntity, SwitchEntity):
         raise NotImplementedError
 
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
         """Return the requested state while pending, else the reported state."""
         if self._pending_state is not None:
             return self._pending_state
@@ -183,7 +183,9 @@ class SmartPendingStateSwitch(SmartHashtagEntity, SwitchEntity):
             seconds=PENDING_STATE_TIMEOUT
         )
         self.coordinator.set_update_interval(
-            self._interval_key, timedelta(seconds=FAST_INTERVAL)
+            self._interval_key,
+            timedelta(seconds=FAST_INTERVAL),
+            expires_after=timedelta(seconds=PENDING_STATE_TIMEOUT),
         )
         self.async_write_ha_state()
 
@@ -220,10 +222,10 @@ class SmartChargingSwitch(SmartPendingStateSwitch):
         return "charging_control"
 
     @property
-    def _reported_state(self) -> bool:
+    def _reported_state(self) -> bool | None:
         """Return true if the vehicle reports that it is charging."""
         if self._vehicle is None or self._vehicle.battery is None:
-            return False
+            return None
         charging_status = self._vehicle.battery.charging_status
         return bool(
             charging_status
@@ -253,11 +255,11 @@ class SmartTripRecordingSwitch(SmartPendingStateSwitch):
     _command_name = "trip recording"
 
     @property
-    def _reported_state(self) -> bool:
+    def _reported_state(self) -> bool | None:
         """Return true if the vehicle reports trip recording as on."""
         state = None if self._vehicle is None else self._vehicle.state
         if state is None or state.journal_log_state is None:
-            return False
+            return None
         return int(state.journal_log_state) == 1
 
     async def _send_command(self, active: bool) -> bool:
@@ -507,7 +509,9 @@ class SmartWindowControlSwitch(SmartHashtagEntity, SwitchEntity):
             seconds=PENDING_STATE_TIMEOUT
         )
         self.coordinator.set_update_interval(
-            self._unique_id_suffix, timedelta(seconds=FAST_INTERVAL)
+            self._unique_id_suffix,
+            timedelta(seconds=FAST_INTERVAL),
+            expires_after=timedelta(seconds=PENDING_STATE_TIMEOUT),
         )
         self.async_write_ha_state()
 

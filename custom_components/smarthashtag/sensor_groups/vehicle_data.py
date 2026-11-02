@@ -105,7 +105,8 @@ def _total_trips(vehicle: Any) -> int | None:
 
 
 ENTITY_VEHICLE_DATA_DESCRIPTIONS: tuple[SmartVehicleSensorEntityDescription, ...] = (
-    # --- Last recorded trip (needs trip recording switched on in the car) ---
+    # --- Last recorded trip (needs trip recording switched on in the car; the
+    # library only reads the journal of the last 14 days) ---
     SmartVehicleSensorEntityDescription(
         key="last_trip_distance",
         translation_key="last_trip_distance",
@@ -173,11 +174,12 @@ ENTITY_VEHICLE_DATA_DESCRIPTIONS: tuple[SmartVehicleSensorEntityDescription, ...
         value_fn=_trip_value("end_time"),
     ),
     SmartVehicleSensorEntityDescription(
+        # The library reads the journal of the last 14 days only, so this is a
+        # rolling count that also goes down; no state class on purpose.
         key="recorded_trips",
         translation_key="recorded_trips",
-        name="Recorded trips",
+        name="Trips (last 14 days)",
         icon="mdi:counter",
-        state_class=SensorStateClass.TOTAL,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=_total_trips,
     ),

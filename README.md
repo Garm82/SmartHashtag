@@ -205,7 +205,7 @@ You can also call `smarthashtag.send_destination` with coordinates, a name and a
 ## Trips, Vehicle Modes and Software
 
 - **Trip recording** (switch) turns on-vehicle trip recording on or off. The cloud only returns trips while it is on.
-- **Last trip** sensors show distance, duration, energy, average consumption, average speed, regenerated energy and end time of the most recent trip, plus the number of recorded trips. They stay unknown while no trip is recorded.
+- **Last trip** sensors show distance, duration, energy, average consumption, average speed, regenerated energy and end time of the most recent trip, plus the number of trips. The cloud journal is read for the last 14 days, so the sensors stay unknown when no trip was recorded in that time.
 - **Camping mode**, **Valet mode**, **Park comfort** and **Trip recording** binary sensors follow the state flags of the car. Battery pulse heating, cabin overheat protection, car locator, position upload and privacy mode are available but disabled by default.
 - **Parked since**, **Range to 20 %** and the **alarm system status / trigger codes** come straight from the vehicle status. The alarm codes are shown raw because their meaning is not documented.
 - **Vehicle software** (update entity) shows the installed smart OS version and whether a newer one is offered. The update itself is installed in the car.

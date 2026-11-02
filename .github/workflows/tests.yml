@@ -68,6 +68,21 @@ jobs:
       - name: Hassfest validation
         uses: "home-assistant/actions/hassfest@master"
 
+  compat:
+    runs-on: "ubuntu-latest"
+    name: Python 3.12 syntax
+    steps:
+      - name: Check out code from GitHub
+        uses: "actions/checkout@v7"
+      - name: Setup Python 3.12
+        uses: "actions/setup-python@v7"
+        with:
+          python-version: "3.12"
+      # The tests run on 3.14 only; this catches newer syntax that would
+      # break installs on the oldest supported Home Assistant
+      - name: Compile integration
+        run: python -m compileall -q custom_components
+
   tests:
     strategy:
       fail-fast: false

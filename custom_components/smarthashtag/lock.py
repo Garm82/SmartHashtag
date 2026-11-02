@@ -162,7 +162,9 @@ class SmartDoorLock(SmartHashtagEntity, LockEntity):
             seconds=PENDING_STATE_TIMEOUT
         )
         self.coordinator.set_update_interval(
-            self._pending_key, timedelta(seconds=FAST_INTERVAL)
+            self._pending_key,
+            timedelta(seconds=FAST_INTERVAL),
+            expires_after=timedelta(seconds=PENDING_STATE_TIMEOUT),
         )
         self.async_write_ha_state()
 
