@@ -68,7 +68,12 @@ jobs:
 
           # Commit the version changes
           git add custom_components/smarthashtag/const.py custom_components/smarthashtag/manifest.json
-          git commit -m "chore: update version to ${{ steps.get_version.outputs.VERSION }}"
+          # The version may already be set (e.g. bumped by hand before tagging)
+          if git diff --cached --quiet; then
+            echo "Version already ${{ steps.get_version.outputs.VERSION }}, nothing to commit"
+          else
+            git commit -m "chore: update version to ${{ steps.get_version.outputs.VERSION }}"
+          fi
 
           # Delete the old tag locally (it exists since we checked out the tag)
           # and create a new one pointing to the new commit with version updates
