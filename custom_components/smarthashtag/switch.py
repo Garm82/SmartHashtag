@@ -116,7 +116,10 @@ class SmartPendingStateSwitch(SmartHashtagEntity, SwitchEntity):
 
     @property
     def _reported_state(self) -> bool | None:
-        """Return the state reported by the vehicle, None if unknown."""
+        """Return the state reported by the vehicle, None if unknown.
+
+        An unknown state never confirms a pending command.
+        """
         raise NotImplementedError
 
     async def _send_command(self, active: bool) -> bool:
@@ -223,14 +226,11 @@ class SmartChargingSwitch(SmartPendingStateSwitch):
 
     @property
     def _reported_state(self) -> bool | None:
-        """Return true if the vehicle reports that it is charging."""
-        if self._vehicle is None or self._vehicle.battery is None:
+        """Return true if the vehicle reports that it is charging, None if unknown."""
+        battery = None if self._vehicle is None else self._vehicle.battery
+        if battery is None or battery.charging_status is None:
             return None
-        charging_status = self._vehicle.battery.charging_status
-        return bool(
-            charging_status
-            and str(charging_status).upper() in ("CHARGING", "DC_CHARGING")
-        )
+        return str(battery.charging_status).upper() in ("CHARGING", "DC_CHARGING")
 
     async def _send_command(self, active: bool) -> bool:
         charging_control = self._vehicle.charging_control

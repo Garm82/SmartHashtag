@@ -249,7 +249,8 @@ class SmartHashtagDataUpdateCoordinator(DataUpdateCoordinator):
         options = self.config_entry.options if self.config_entry else {}
         vehicles = list((self.account.vehicles or {}).values())
 
-        if any(_is_charging(vehicle) for vehicle in vehicles):
+        charging = [_is_charging(vehicle) for vehicle in vehicles]
+        if any(state is True for state in charging):
             self.set_update_interval(
                 "charging",
                 timedelta(
@@ -258,6 +259,9 @@ class SmartHashtagDataUpdateCoordinator(DataUpdateCoordinator):
                     )
                 ),
             )
+        elif any(state is None for state in charging):
+            # No usable charging data in this refresh: keep the current interval
+            pass
         else:
             self.reset_update_interval("charging")
 
@@ -328,11 +332,23 @@ class SmartHashtagDataUpdateCoordinator(DataUpdateCoordinator):
         )
 
 
-def _is_charging(vehicle: Any) -> bool:
-    """Return true if the vehicle reports a charging current."""
-    current = getattr(getattr(vehicle, "battery", None), "charging_current", None)
-    # An unknown current (None) is not charging
-    return bool(getattr(current, "value", None))
+_CHARGING_STATES = ("CHARGING", "DC_CHARGING")
+
+
+def _is_charging(vehicle: Any) -> bool | None:
+    """Return whether the vehicle is charging, None if it does not say.
+
+    The charging current decides; without one the charging status does.
+    None only when the refresh carries neither.
+    """
+    battery = getattr(vehicle, "battery", None)
+    current = getattr(getattr(battery, "charging_current", None), "value", None)
+    if current is not None:
+        return bool(current)
+    status = getattr(battery, "charging_status", None)
+    if status is not None:
+        return str(status).upper() in _CHARGING_STATES
+    return None
 
 
 def _is_driving(vehicle: Any) -> bool:
